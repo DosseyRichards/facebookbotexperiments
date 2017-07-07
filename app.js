@@ -10,13 +10,14 @@ var users = require('./routes/users');
 
 var app = express();
 var bot = MessengerPlatform.create({
-  pageID: '<your page id>',
+  pageID: '101159390522665',
   appID: '1971780353040040',
   appSecret: '9c815e2fe193c0d126597f00dde074d6',
-  validationToken: '<your validation token>',
-  pageToken: 'EAAcBUuOEnqgBALZAEB8PrFrqBN25U2K8ZAigaENI1jXstA1YPR2qEs7ZC6blZCI2Dlfw0S1EZA0xQyQ3yyAjIMiv5OCPe7HUtTZACzqKiA6aIcCLeqkfMzSyXZA2N1O24B7am1cmPtODsp9pxbMSUDTgD3cZAu7DD9Rj3rwCov9IVHy5Cl2pqr0z'
+  validationToken: 'catsarecool',
+  pageToken: 'EAAcBUuOEnqgBAExugvgT349oWh1yno81qic6iQtM7fDhy4k0Ms7Nsb9v09OcIXqitZCGiUMod7cuJeBTpg5iqnzcYSthNjYvb6yOUodGgyehfieHRnUFaJ0PEtPtVAu7i9WhsZBee4eCYJiSlPE13GyBJiZCWkTcu6d8lr2l0203JapnNfk'
 });
 
+var pageToken = 'EAAcBUuOEnqgBADHjDHTbZAeLae19fT84KVD0LOe1dCdO4DGiMDoiSC43aVE0Ks5ujJkP3elWPHVf1s4yu43AVxmRZA8IqVKjfj89grZAZCGTAP43Fe7jbGZAO89e0as0HJZCs0ATh4YCS1ZBC9MLchsZCeKcuqFWPI9gLpkkaQQVX36kiJZCiZAPQ3'
 
 
 // view engine setup
@@ -37,15 +38,80 @@ app.use('/users', users);
 
 
 
-app.use(bot.webhook('/webhook'));
-bot.on(MessengerPlatform.Events.MESSAGE, function(userId, message) {
-  // add code below. 
-  bot.sendTextMessage('<user id>', 'TEST');
 
+
+// bot.on(	MessengerPlatform.Events.MESSAGE, function(userId, message) {
+//   // add code below. 
+//   var textMessage =  "You wrote ";
+//   console.log("hello");
+//   console.log(userId, message)
+//   bot.sendTextMessage(userId, textMessage);
+
+
+
+// });
+// app.use(bot.webhook('/webhook'));
+
+
+app.post('/webhook/', function(req, res, next){
+	console.log(req.body);
+
+	var messaging_events = req.body.entry[0].messaging
+	for (var i = 0; i < messaging_events.length; i++) {
+		var event = req.body.entry[0].messaging[i]
+		var sender = event.sender.id
+		console.log(sender);
+		if (event.message && event.message.text) {
+			var text = event.message.text
+			if (text === 'Generic'){ 
+				console.log("welcome to chatbot")
+				//sendGenericMessage(sender)
+				continue
+			}
+			console.log("trying to send something");
+			sendTextMessage(sender, "Text received, echo: " + text.substring(0, 200));
+
+		}
+		if (event.postback) {
+			var text = JSON.stringify(event.postback)
+			sendTextMessage(sender, "Postback received: "+text.substring(0, 200));
+			continue
+		}
+	}
+	res.sendStatus(200)
 });
 
+app.get('/webhook', function (req, res) {
+	console.log("challenge accepted!");
+	console.log( req.query['hub.challenge'] );
+	if (req.query['hub.verify_token']) {
+		res.send(req.query['hub.challenge'])
+	} else {
+		res.send('Error, wrong token')
+	}
+});
 
+var sendTextMessage = function(sender, text) {
+	console.log("sendText message function init");
+	var messageData = { text: text };
+	
+	request({
+	    url: 'https://graph.facebook.com/v2.6/me/messages',
+	    qs: {access_token:pageToken},
+	    method: 'POST',
+		json: {
+		    recipient: {id:sender},
+			message: messageData,
+		}
+	}, function(error, response, body) {
+		if (error) {
+		    console.log('Error sending messages: ', error)
+		} else if (response.body.error) {
+		    console.log('Error: ', response.body.error)
+	    }
+    })
 
+};
 
 
 // catch 404 and forward to error handler
